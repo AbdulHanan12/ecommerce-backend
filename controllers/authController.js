@@ -1,5 +1,8 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator'); // Import validation result handler
+
+
 
 // Signup
 exports.signup = async (req, res) => {
@@ -76,6 +79,34 @@ exports.allUser = async (req, res) => {
       totalPages: Math.ceil(totalItems / limit),
       data: users,
     });
+  } catch (error) {
+    console.error(error.message);  // Log the specific error message
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+// Update User
+exports.updateUser = async (req, res) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', ''); 
+    const { username } = req.body;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const user = await User.findByIdAndUpdate(decoded.id, { username: username }, { new: true }); // exclude the password from the response
+    
+    return res.status(200).json({ message: 'User updated successfully', user: user });
+  } catch (error) {
+    console.error(error.message);  // Log the specific error message
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Update User Password
+exports.updatePassword = async (req, res) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', ''); 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = await User.findById(decoded.id).select('-password'); // exclude the password from the response
+    
+    return res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error(error.message);  // Log the specific error message
     res.status(500).json({ message: 'Server Error' });
