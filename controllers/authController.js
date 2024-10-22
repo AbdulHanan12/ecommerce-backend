@@ -27,3 +27,57 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 };
+
+
+// Logout
+exports.logout = async (req, res) => {
+  try {
+    // Logout here
+    
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// Auth User
+exports.authUser = async (req, res) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', ''); 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = await User.findById(decoded.id).select('-password'); // exclude the password from the response
+    if (!req.user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    return res.status(200).json({ user: req.user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+
+// All User
+exports.allUser = async (req, res) => {
+  try {
+    const token = req.header('Authorization').replace('Bearer ', ''); 
+    const userAuth = jwt.verify(token, process.env.JWT_SECRET_KEY);
+     // Get page and limit from query parameters, or set defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Calculate skip value
+    const skip = (page - 1) * limit;
+    const users = await User.find().skip(skip).limit(limit); // exclude the password from the response
+    const totalItems = await User.countDocuments();
+
+    return res.status(200).json({
+      page,
+      limit,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      data: users,
+    });
+  } catch (error) {
+    console.error(error.message);  // Log the specific error message
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
