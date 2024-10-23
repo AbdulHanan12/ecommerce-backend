@@ -3,15 +3,8 @@ const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 const updateUserValidation = require('../validations/updateUserValidation');
 const updatePasswordValidation = require('../validations/updatePasswordValidation');
-const { validationResult } = require('express-validator'); // Import validation result handler
-
 
 var router = express.Router();
-
-/* GET users listing. */
-// router.get('/', function(req, res, next) {
-//   res.render('index', { title: 'Express' });
-// });
 
 const authRoutes = express.Router();
 
