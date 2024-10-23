@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator'); // Import validation result handler
+const bcrypt = require('bcryptjs');
 
 
 
@@ -47,7 +48,7 @@ exports.authUser = async (req, res) => {
   try {
     const token = req.header('Authorization').replace('Bearer ', ''); 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    req.user = await User.findById(decoded.id).select('-password'); // exclude the password from the response
+    req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -69,7 +70,7 @@ exports.allUser = async (req, res) => {
 
     // Calculate skip value
     const skip = (page - 1) * limit;
-    const users = await User.find().skip(skip).limit(limit); // exclude the password from the response
+    const users = await User.find().skip(skip).limit(limit);
     const totalItems = await User.countDocuments();
 
     return res.status(200).json({
@@ -80,7 +81,7 @@ exports.allUser = async (req, res) => {
       data: users,
     });
   } catch (error) {
-    console.error(error.message);  // Log the specific error message
+    console.error(error.message); 
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -90,11 +91,11 @@ exports.updateUser = async (req, res) => {
     const token = req.header('Authorization').replace('Bearer ', ''); 
     const { username } = req.body;
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    const user = await User.findByIdAndUpdate(decoded.id, { username: username }, { new: true }); // exclude the password from the response
+    const user = await User.findByIdAndUpdate(decoded.id, { username: username }, { new: true });
     
     return res.status(200).json({ message: 'User updated successfully', user: user });
   } catch (error) {
-    console.error(error.message);  // Log the specific error message
+    console.error(error.message); 
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -104,11 +105,15 @@ exports.updatePassword = async (req, res) => {
   try {
     const token = req.header('Authorization').replace('Bearer ', ''); 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    req.user = await User.findById(decoded.id).select('-password'); // exclude the password from the response
+    const getUser = await User.findById(decoded.id);
+    if (!(await getUser.comparePassword(req.body.old_password))){
+      return res.status(422).json({ message: 'Incorrect Password' });
+    }
+    const user = await User.findByIdAndUpdate(decoded.id, { password: await bcrypt.hash(req.body.password, 10) }, { new: true });
     
     return res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
-    console.error(error.message);  // Log the specific error message
+    console.error(error.message); 
     res.status(500).json({ message: 'Server Error' });
   }
 };
